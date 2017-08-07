@@ -69,23 +69,26 @@ Now let\'s have a recognized template:
 FakeResponse = Struct.new(:body)
 
 describe 'ReplaceableContent' do
+  let(:client) do
+    client = MiniTest::Mock.new
+    client.expect(
+      :get_wikitext,
+      FakeResponse.new(wikitext),
+      ['Some Wiki page']
+    )
+    client
+  end
+
+  let(:section) do
+    MediaWiki::Page::ReplaceableContent.new(
+      client: client,
+      title: 'Some Wiki page',
+      template: 'Politician scraper comparison'
+    )
+  end
+
   describe 'multiple sections with output terminated by HTML comments' do
-    let(:client) do
-      client = MiniTest::Mock.new
-      client.expect(
-        :get_wikitext,
-        FakeResponse.new(WIKITEXT_MULTIPLE_TERMINATED),
-        ['Some Wiki page']
-      )
-      client
-    end
-    let(:section) do
-      MediaWiki::Page::ReplaceableContent.new(
-        client: client,
-        title: 'Some Wiki page',
-        template: 'Politician scraper comparison'
-      )
-    end
+    let(:wikitext) { WIKITEXT_MULTIPLE_TERMINATED }
 
     it 'can be created an non-nill' do
       section.wont_be_nil
@@ -147,22 +150,7 @@ Now some trailing text.
   end
 
   describe 'single section with unterminated output' do
-    let(:client) do
-      client = MiniTest::Mock.new
-      client.expect(
-        :get_wikitext,
-        FakeResponse.new(WIKITEXT_SINGLE_UNTERMINATED),
-        ['Some Wiki page']
-      )
-      client
-    end
-    let(:section) do
-      MediaWiki::Page::ReplaceableContent.new(
-        client: client,
-        title: 'Some Wiki page',
-        template: 'Politician scraper comparison'
-      )
-    end
+    let(:wikitext) { WIKITEXT_SINGLE_UNTERMINATED }
 
     it 'can be created an non-nill' do
       section.wont_be_nil
@@ -227,26 +215,9 @@ But there\'s no terminating HTML comment.',
       client.verify
     end
   end
-end
 
-describe 'ReplaceableContent' do
   describe 'no whitespace is found after the template' do
-    let(:client) do
-      client = MiniTest::Mock.new
-      client.expect(
-        :get_wikitext,
-        FakeResponse.new(WIKITEXT_NO_WHITESPACE_AFTER_TEMPLATE),
-        ['Some Wiki page']
-      )
-      client
-    end
-    let(:section) do
-      MediaWiki::Page::ReplaceableContent.new(
-        client: client,
-        title: 'Some Wiki page',
-        template: 'Politician scraper comparison'
-      )
-    end
+    let(:wikitext) { WIKITEXT_NO_WHITESPACE_AFTER_TEMPLATE }
 
     it 'can parse the page and return empty existing content' do
       section.existing_content.must_equal('')
@@ -271,26 +242,9 @@ Hello - this text immediately abuts the template.'
       )
     end
   end
-end
 
-describe 'ReplaceableContent' do
   describe 'nothing is after the template' do
-    let(:client) do
-      client = MiniTest::Mock.new
-      client.expect(
-        :get_wikitext,
-        FakeResponse.new(WIKITEXT_NOTHING_AFTER_TEMPLATE),
-        ['Some Wiki page']
-      )
-      client
-    end
-    let(:section) do
-      MediaWiki::Page::ReplaceableContent.new(
-        client: client,
-        title: 'Some Wiki page',
-        template: 'Politician scraper comparison'
-      )
-    end
+    let(:wikitext) { WIKITEXT_NOTHING_AFTER_TEMPLATE }
 
     it 'can parse the page and return empty existing content' do
       section.existing_content.must_equal('')
