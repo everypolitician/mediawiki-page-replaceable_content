@@ -48,6 +48,24 @@ Now let\'s have a recognized template:
 
 But there\'s no terminating HTML comment.'.freeze
 
+WIKITEXT_NOTHING_AFTER_TEMPLATE = 'Hi, here is some introductory text.
+
+Now let\'s have a recognized template:
+
+{{Politician scraper comparison
+|foo=43
+|bar=Woolly Mountain Tapir
+}}'.freeze
+
+WIKITEXT_NO_WHITESPACE_AFTER_TEMPLATE = 'Hi, here is some introductory text.
+
+Now let\'s have a recognized template:
+
+{{Politician scraper comparison
+|foo=43
+|bar=Woolly Mountain Tapir
+}}Hello - this text immediately abuts the template.'.freeze
+
 FakeResponse = Struct.new(:body)
 
 describe 'ReplaceableContent' do
@@ -75,7 +93,7 @@ describe 'ReplaceableContent' do
 
     it 'can return the wikitext within a section' do
       section.existing_content.must_equal(
-        "\nOld content of the first section.\n"
+        "\n\nOld content of the first section.\n"
       )
       client.verify
     end
@@ -171,6 +189,7 @@ Now let\'s have a recognized template:
 New content for the first section!
 <!-- OUTPUT END succeeded -->
 
+
 But there\'s no terminating HTML comment.'
       )
       client.verify
@@ -197,6 +216,7 @@ Now let\'s have a recognized template:
 New content for the first section!
 <!-- OUTPUT END Run time: took absolutely ages -->
 
+
 But there\'s no terminating HTML comment.',
         ]
       )
@@ -205,6 +225,94 @@ But there\'s no terminating HTML comment.',
         'Run time: took absolutely ages'
       )
       client.verify
+    end
+  end
+end
+
+describe 'ReplaceableContent' do
+  describe 'no whitespace is found after the template' do
+    let(:client) do
+      client = MiniTest::Mock.new
+      client.expect(
+        :get_wikitext,
+        FakeResponse.new(WIKITEXT_NO_WHITESPACE_AFTER_TEMPLATE),
+        ['Some Wiki page']
+      )
+      client
+    end
+    let(:section) do
+      MediaWiki::Page::ReplaceableContent.new(
+        client: client,
+        title: 'Some Wiki page',
+        template: 'Politician scraper comparison'
+      )
+    end
+
+    it 'can parse the page and return empty existing content' do
+      section.existing_content.must_equal('')
+    end
+
+    it 'can be reassembled with new content' do
+      section.reassemble_page(
+        'New content here!',
+        'succeeded'
+      ).must_equal(
+        'Hi, here is some introductory text.
+
+Now let\'s have a recognized template:
+
+{{Politician scraper comparison
+|foo=43
+|bar=Woolly Mountain Tapir
+}}
+New content here!
+<!-- OUTPUT END succeeded -->
+Hello - this text immediately abuts the template.'
+      )
+    end
+  end
+end
+
+describe 'ReplaceableContent' do
+  describe 'nothing is after the template' do
+    let(:client) do
+      client = MiniTest::Mock.new
+      client.expect(
+        :get_wikitext,
+        FakeResponse.new(WIKITEXT_NOTHING_AFTER_TEMPLATE),
+        ['Some Wiki page']
+      )
+      client
+    end
+    let(:section) do
+      MediaWiki::Page::ReplaceableContent.new(
+        client: client,
+        title: 'Some Wiki page',
+        template: 'Politician scraper comparison'
+      )
+    end
+
+    it 'can parse the page and return empty existing content' do
+      section.existing_content.must_equal('')
+    end
+
+    it 'can be reassembled with new content' do
+      section.reassemble_page(
+        'New content here!',
+        'succeeded'
+      ).must_equal(
+        'Hi, here is some introductory text.
+
+Now let\'s have a recognized template:
+
+{{Politician scraper comparison
+|foo=43
+|bar=Woolly Mountain Tapir
+}}
+New content here!
+<!-- OUTPUT END succeeded -->
+'
+      )
     end
   end
 end
