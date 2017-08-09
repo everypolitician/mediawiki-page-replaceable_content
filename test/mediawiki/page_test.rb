@@ -66,6 +66,17 @@ Now let\'s have a recognized template:
 |bar=Woolly Mountain Tapir
 }}Hello - this text immediately abuts the template.'.freeze
 
+WIKITEXT_CONTAINS_SUB_TEMPLATE = 'Hi, here is some introductory text.
+
+Now let\'s have a recognized template:
+
+{{Politician scraper comparison
+|foo={{!}}
+|bar=Woolly Mountain Tapir
+}}
+
+But there\'s no terminating HTML comment.'.freeze
+
 FakeResponse = Struct.new(:body)
 
 describe 'ReplaceableContent' do
@@ -267,6 +278,14 @@ New content here!
 <!-- OUTPUT END succeeded -->
 '
       )
+    end
+  end
+
+  describe 'template contains sub-template' do
+    let(:wikitext) { WIKITEXT_CONTAINS_SUB_TEMPLATE }
+
+    it 'returns the correct parameters' do
+      section.params.must_equal(foo: '{{!}}', bar: 'Woolly Mountain Tapir')
     end
   end
 end
